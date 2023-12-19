@@ -1150,6 +1150,13 @@ func NewImageFromImage(img image.Image) *Image {
 	return v
 }
 
+// from screen buffer and (screenshot)
+func LoadImageFromScreen() Image {
+	image := C.Image{}
+	image = C.LoadImageFromScreen()
+	return *(*Image)(unsafe.Pointer(&image))
+}
+
 // Texture2D type, bpp always RGBA (32bit)
 // NOTE: Data stored in GPU memory
 type Texture2D struct {
