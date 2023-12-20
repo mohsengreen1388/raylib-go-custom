@@ -1150,13 +1150,11 @@ func NewImageFromImage(img image.Image) *Image {
 	return v
 }
 
-// from screen buffer and (screenshot)
-func LoadImageFromScreen() Image {
-	structImage := C.Image{}
-	structImage = C.LoadImageFromScreen()
+// from screen buffer and (screenshot) you should care when use this func becuse hight load ram  per run 
+func LoadImageFromScreen()Image{
+	structImage := C.LoadImageFromScreen()
 	image := *(*Image)(unsafe.Pointer(&structImage))
-	C.free(structImage.data)
-	return image
+	return image 
 }
 
 // Texture2D type, bpp always RGBA (32bit)
