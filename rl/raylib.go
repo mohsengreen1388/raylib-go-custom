@@ -1152,9 +1152,11 @@ func NewImageFromImage(img image.Image) *Image {
 
 // from screen buffer and (screenshot)
 func LoadImageFromScreen() Image {
-	image := C.Image{}
-	image = C.LoadImageFromScreen()
-	return *(*Image)(unsafe.Pointer(&image))
+	structImage := C.Image{}
+	structImage = C.LoadImageFromScreen()
+	image := *(*Image)(unsafe.Pointer(&structImage))
+	C.free(structImage.data)
+	return image
 }
 
 // Texture2D type, bpp always RGBA (32bit)
