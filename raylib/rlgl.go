@@ -889,12 +889,32 @@ func SetVertexAttributeDivisor(index uint32, divisor int32) {
 	C.rlSetVertexAttributeDivisor(cindex, cdivisor)
 }
 
+// rlLoadTexture for Framebuffer
+func LoadTextures(data interface{},width int32, height int32,pixelFormat int32,mipLevel int32)uint32{
+	theData := unsafe.Pointer(&data)
+	cwidth := C.int(width)
+	cheight := C.int(height)
+	format := C.int(pixelFormat)
+	cmipLevel := C.int(mipLevel)
+	return uint32(C.rlLoadTexture(theData,cwidth,cheight,format,cmipLevel));
+}
+
+// LoadTextureDepth 
+func LoadTextureDepth(width int32, height int32,useRenderBuffer bool)uint32{
+	cwidth := C.int(width)
+	cheight := C.int(height)
+	CheckRenderBuffer := C.bool(useRenderBuffer)
+	return uint32(C.rlLoadTextureDepth(cwidth, cheight,CheckRenderBuffer));
+}
+
 // LoadFramebuffer - Load an empty framebuffer
 func LoadFramebuffer(width int32, height int32) uint32 {
 	cwidth := C.int(width)
 	cheight := C.int(height)
 	return uint32(C.rlLoadFramebuffer(cwidth, cheight))
 }
+
+
 
 // FramebufferAttach - Attach texture/renderbuffer to a framebuffer
 func FramebufferAttach(fboId uint32, texId uint32, attachType int32, texType int32, mipLevel int32) {
