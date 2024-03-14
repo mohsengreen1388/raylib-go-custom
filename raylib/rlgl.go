@@ -900,7 +900,7 @@ func LoadTextures(data interface{},width int32, height int32,pixelFormat int32,m
 }
 
 // rlLoadTextureCubemap
-func LoadTextureCubemap(data interface{},size int32,pixelFormat int32){
+func LoadTextureCubemap(data interface{},size int32,pixelFormat int32)uint32{
 	theData := unsafe.Pointer(&data)
 	csize := C.int(size)
 	format := C.int(pixelFormat)
