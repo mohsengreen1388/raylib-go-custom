@@ -899,6 +899,16 @@ func LoadTextures(data interface{},width int32, height int32,pixelFormat int32,m
 	return uint32(C.rlLoadTexture(theData,cwidth,cheight,format,cmipLevel));
 }
 
+// rlLoadTextureCubemap
+func LoadTextureCubemap(data interface{},size int32,pixelFormat int32){
+	theData := unsafe.Pointer(&data)
+	csize := C.int(size)
+	format := C.int(pixelFormat)
+	
+	return uint32(C.rlLoadTextureCubemap(theData,csize,format));
+	
+}
+
 // LoadTextureDepth 
 func LoadTextureDepth(width int32, height int32,useRenderBuffer bool)uint32{
 	cwidth := C.int(width)
