@@ -2001,10 +2001,12 @@ ModelAnimation *LoadModelAnimations(const char *fileName, unsigned int *animCoun
 
 // Update model animated vertex data (positions and normals) for a given frame
 // NOTE: Updated data is uploaded to GPU
-void UpdateModelAnimation(Model model, ModelAnimation anim, int frame)
+Transform* UpdateModelAnimation(Model model, ModelAnimation anim, int frame)
 {
+    Transform *FramePoses;
     if ((anim.frameCount > 0) && (anim.bones != NULL) && (anim.framePoses != NULL))
     {
+
         if (frame >= anim.frameCount) frame = frame%anim.frameCount;
 
         for (int m = 0; m < model.meshCount; m++)
@@ -2076,7 +2078,9 @@ void UpdateModelAnimation(Model model, ModelAnimation anim, int frame)
                     mesh.animVertices[vCounter + 1] += animVertex.y*boneWeight;
                     mesh.animVertices[vCounter + 2] += animVertex.z*boneWeight;
                     updated = true;
-
+                    
+                    FramePoses = &anim.framePoses[frame][boneId];
+    
                     // Normals processing
                     // NOTE: We use meshes.baseNormals (default normal) to calculate meshes.normals (animated normals)
                     if (mesh.normals != NULL)
@@ -2099,6 +2103,7 @@ void UpdateModelAnimation(Model model, ModelAnimation anim, int frame)
             }
         }
     }
+    return FramePoses;
 }
 
 // Unload animation array data

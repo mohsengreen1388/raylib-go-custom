@@ -428,13 +428,16 @@ func LoadModelAnimations(fileName string) []ModelAnimation {
 	return v
 }
 
-// UpdateModelAnimation - Update model animation pose
-func UpdateModelAnimation(model Model, anim ModelAnimation, frame int32) {
+// UpdateModelAnimation - Update model animation pose and return FramePoses
+func UpdateModelAnimation(model Model, anim ModelAnimation, frame int32) *Transform{
 	cmodel := model.cptr()
 	canim := anim.cptr()
 	cframe := (C.int)(frame)
-	C.UpdateModelAnimation(*cmodel, *canim, cframe)
+	v := C.UpdateModelAnimation(*cmodel, *canim, cframe)
+	return (*Transform)(unsafe.Pointer(v))
 }
+
+
 
 // UnloadModelAnimation - Unload animation data
 func UnloadModelAnimation(anim ModelAnimation) {
