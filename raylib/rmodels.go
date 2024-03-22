@@ -428,16 +428,30 @@ func LoadModelAnimations(fileName string) []ModelAnimation {
 	return v
 }
 
-// UpdateModelAnimation - Update model animation pose and return FramePoses
-func UpdateModelAnimation(model Model, anim ModelAnimation, frame int32) *Transform{
+// UpdateModelAnimation - Update model animation pose
+func UpdateModelAnimation(model Model, anim ModelAnimation, frame int32){
 	cmodel := model.cptr()
 	canim := anim.cptr()
 	cframe := (C.int)(frame)
-	v := C.UpdateModelAnimation(*cmodel, *canim, cframe)
-	return (*Transform)(unsafe.Pointer(v))
+	C.UpdateModelAnimation(*cmodel, *canim, cframe)
 }
 
+// Get framePoses for per bone
+func GetBonePose(anim ModelAnimation, frame int32,boneId int32)Transform{
+	canim := anim.cptr()
+	cframe := (C.int)(frame)
+	cboneId := (C.int)(boneId)
+	result := C.GetBonePose(*canim,cframe,cboneId)
+	return *(*Transform)(unsafe.Pointer(&result))
+}
 
+// Get bindPose Model
+func GetBindPose(model Model,boneId int32)Transform{
+	cmodel := model.cptr()
+	cboneId := (C.int)(boneId)
+	result := C.GetBindPose(*cmodel,cboneId)
+	return *(*Transform)(unsafe.Pointer(&result))
+}
 
 // UnloadModelAnimation - Unload animation data
 func UnloadModelAnimation(anim ModelAnimation) {
