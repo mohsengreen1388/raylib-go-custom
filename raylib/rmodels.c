@@ -2124,6 +2124,13 @@ char* GetBoneName(Model model,int boneId)
     return model.bones[boneId].name;
 }
 
+// Get BoneCount
+int BoneCount(Model model)
+{
+    return model.boneCount;
+}
+
+
 // Unload animation array data
 void UnloadModelAnimations(ModelAnimation *animations, unsigned int count)
 {

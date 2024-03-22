@@ -219,6 +219,7 @@ func LoadModel(fileName string) Model {
 	defer C.free(unsafe.Pointer(cfileName))
 	ret := C.LoadModel(cfileName)
 	v := newModelFromPointer(unsafe.Pointer(&ret))
+	println(v.BoneCount)
 	return v
 }
 
@@ -451,6 +452,13 @@ func GetBindPose(model Model,boneId int32)Transform{
 	cboneId := (C.int)(boneId)
 	result := C.GetBindPose(*cmodel,cboneId)
 	return *(*Transform)(unsafe.Pointer(&result))
+}
+
+// Get framePoses for per bone
+func BoneCount(model Model)int32{
+	cmodel := model.cptr()
+	result := C.BoneCount(*cmodel)
+	return *(*int32)(unsafe.Pointer(&result))
 }
 
 //Get NameBone
