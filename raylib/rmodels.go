@@ -219,7 +219,6 @@ func LoadModel(fileName string) Model {
 	defer C.free(unsafe.Pointer(cfileName))
 	ret := C.LoadModel(cfileName)
 	v := newModelFromPointer(unsafe.Pointer(&ret))
-	println(v.BoneCount)
 	return v
 }
 
