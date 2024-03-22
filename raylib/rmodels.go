@@ -453,6 +453,14 @@ func GetBindPose(model Model,boneId int32)Transform{
 	return *(*Transform)(unsafe.Pointer(&result))
 }
 
+//Get NameBone
+func GetBoneName(model Model,boneId int)string{
+	cmodel := model.cptr()
+	cboneId := (C.int)(boneId)
+	Name := C.GoString(C.GetBoneName(*cmodel,cboneId))
+    return Name
+}
+
 // UnloadModelAnimation - Unload animation data
 func UnloadModelAnimation(anim ModelAnimation) {
 	canim := anim.cptr()

@@ -2118,6 +2118,12 @@ Transform GetBindPose(Model model,int boneId)
     return model.bindPose[boneId];
 }
 
+// Get NameBone
+char* GetBoneName(Model model,int boneId)
+{
+    return model.bones[boneId].name;
+}
+
 // Unload animation array data
 void UnloadModelAnimations(ModelAnimation *animations, unsigned int count)
 {
