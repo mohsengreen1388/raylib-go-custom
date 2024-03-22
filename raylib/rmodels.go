@@ -468,6 +468,14 @@ func GetBoneName(model Model,boneId int)string{
     return Name
 }
 
+// Get ParentBone
+func GetParentBone(model Model,boneId int)int32{
+	cmodel := model.cptr()
+	cboneId := (C.int)(boneId)
+	result := C.GetParentBone(*cmodel,cboneId)
+	return *(*int32)(unsafe.Pointer(&result))
+}
+
 // UnloadModelAnimation - Unload animation data
 func UnloadModelAnimation(anim ModelAnimation) {
 	canim := anim.cptr()

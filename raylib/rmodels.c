@@ -2124,6 +2124,12 @@ char* GetBoneName(Model model,int boneId)
     return model.bones[boneId].name;
 }
 
+// Get ParentBone
+int GetParentBone(Model model,int boneId)
+{
+    return model.bones[boneId].parent;
+}
+
 // Get BoneCount
 int BoneCount(Model model)
 {
