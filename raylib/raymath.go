@@ -541,8 +541,6 @@ func MatrixTranslate(x, y, z float32) Matrix {
 func MatrixRotate(axis Vector3, angle float32) Matrix {
 	var result Matrix
 
-	mat := MatrixIdentity()
-
 	x := axis.X
 	y := axis.Y
 	z := axis.Z
@@ -560,48 +558,26 @@ func MatrixRotate(axis Vector3, angle float32) Matrix {
 	cosres := float32(math.Cos(float64(angle)))
 	t := 1.0 - cosres
 
-	// Cache some matrix values (speed optimization)
-	a00 := mat.M0
-	a01 := mat.M1
-	a02 := mat.M2
-	a03 := mat.M3
-	a10 := mat.M4
-	a11 := mat.M5
-	a12 := mat.M6
-	a13 := mat.M7
-	a20 := mat.M8
-	a21 := mat.M9
-	a22 := mat.M10
-	a23 := mat.M11
-
-	// Construct the elements of the rotation matrix
-	b00 := x*x*t + cosres
-	b01 := y*x*t + z*sinres
-	b02 := z*x*t - y*sinres
-	b10 := x*y*t - z*sinres
-	b11 := y*y*t + cosres
-	b12 := z*y*t + x*sinres
-	b20 := x*z*t + y*sinres
-	b21 := y*z*t - x*sinres
-	b22 := z*z*t + cosres
-
 	// Perform rotation-specific matrix multiplication
-	result.M0 = a00*b00 + a10*b01 + a20*b02
-	result.M1 = a01*b00 + a11*b01 + a21*b02
-	result.M2 = a02*b00 + a12*b01 + a22*b02
-	result.M3 = a03*b00 + a13*b01 + a23*b02
-	result.M4 = a00*b10 + a10*b11 + a20*b12
-	result.M5 = a01*b10 + a11*b11 + a21*b12
-	result.M6 = a02*b10 + a12*b11 + a22*b12
-	result.M7 = a03*b10 + a13*b11 + a23*b12
-	result.M8 = a00*b20 + a10*b21 + a20*b22
-	result.M9 = a01*b20 + a11*b21 + a21*b22
-	result.M10 = a02*b20 + a12*b21 + a22*b22
-	result.M11 = a03*b20 + a13*b21 + a23*b22
-	result.M12 = mat.M12
-	result.M13 = mat.M13
-	result.M14 = mat.M14
-	result.M15 = mat.M15
+	result.M0 = x*x*t + cosres
+	result.M1 = y*x*t + z*sinres
+	result.M2 = z*x*t - y*sinres
+	result.M3 = 0
+
+	result.M4 = x*y*t - z*sinres
+	result.M5 = y*y*t + cosres
+	result.M6 = z*y*t + x*sinres
+	result.M7 = 0
+
+	result.M8 = x*z*t + y*sinres
+	result.M9 = y*z*t - x*sinres
+	result.M10 = z*z*t + cosres
+	result.M11 = 0
+
+	result.M12 = 0
+	result.M13 = 0
+	result.M14 = 0
+	result.M15 = 1
 
 	return result
 }
@@ -614,9 +590,8 @@ func MatrixRotateX(angle float32) Matrix {
 	sinres := float32(math.Sin(float64(angle)))
 
 	result.M5 = cosres
-	result.M6 = -sinres
-	result.M9 = sinres
-	result.M10 = cosres
+	result.M6 = sinres
+	result.M9 = -sinres
 
 	return result
 }
@@ -629,8 +604,8 @@ func MatrixRotateY(angle float32) Matrix {
 	sinres := float32(math.Sin(float64(angle)))
 
 	result.M0 = cosres
-	result.M2 = sinres
-	result.M8 = -sinres
+	result.M2 = -sinres
+	result.M8 = sinres
 	result.M10 = cosres
 
 	return result
@@ -644,8 +619,8 @@ func MatrixRotateZ(angle float32) Matrix {
 	sinres := float32(math.Sin(float64(angle)))
 
 	result.M0 = cosres
-	result.M1 = -sinres
-	result.M4 = sinres
+	result.M1 = sinres
+	result.M4 = -sinres
 	result.M5 = cosres
 
 	return result
@@ -663,15 +638,15 @@ func MatrixRotateXYZ(ang Vector3) Matrix {
 	sinx := float32(math.Sin(float64(-ang.X)))
 
 	result.M0 = cosz * cosy
-	result.M4 = (cosz * siny * sinx) - (sinz * cosx)
-	result.M8 = (cosz * siny * cosx) + (sinz * sinx)
+	result.M1 = (cosz * siny * sinx) - (sinz * cosx)
+	result.M2 = (cosz * siny * cosx) + (sinz * sinx)
 
-	result.M1 = sinz * cosy
+	result.M4 = sinz * cosy
 	result.M5 = (sinz * siny * sinx) + (cosz * cosx)
-	result.M9 = (sinz * siny * cosx) - (cosz * sinx)
+	result.M6 = (sinz * siny * cosx) - (cosz * sinx)
 
-	result.M2 = -siny
-	result.M6 = cosy * sinx
+	result.M8 = -siny
+	result.M9 = cosy * sinx
 	result.M10 = cosy * cosx
 
 	return result
@@ -1059,6 +1034,56 @@ func QuaternionTransform(q Quaternion, mat Matrix) Quaternion {
 	result.W = mat.M3*x + mat.M7*y + mat.M11*z + mat.M15*w
 
 	return result
+}
+
+// Get the quaternion equivalent to Euler angles
+// NOTE: Rotation order is ZYX
+func QuaternionFromEuler(pitch float32,yaw float32,roll float32) Quaternion{
+	var result Quaternion
+
+	x0 := math.Cos(float64(pitch*0.5))
+    x1 := math.Sin(float64(pitch*0.5)) 
+    y0 := math.Cos(float64(yaw*0.5))
+    y1 := math.Sin(float64(yaw*0.5)) 
+    z0 := math.Cos(float64(roll*0.5))
+    z1 :=  math.Sin(float64(roll*0.5)) 
+
+    result.X = float32(x1*y0*z0 - x0*y1*z1)
+    result.Y = float32(x0*y1*z0 + x1*y0*z1)
+    result.Z = float32(x0*y0*z1 - x1*y1*z0)
+    result.W = float32(x0*y0*z0 + x1*y1*z1)
+
+	return result
+}
+
+
+// Get the Euler angles equivalent to quaternion (roll, pitch, yaw)
+// NOTE: Angles are returned in a Vector3 struct in radiansQuaternionFromEuler
+func QuaternionToEuler(q Quaternion) Vector3 {
+	var result Vector3
+
+	// Roll (x-axis rotation)
+	x0 := 2.0 * (q.W*q.X + q.Y*q.Z)
+	x1 := 1.0 - 2.0*(q.X*q.X+q.Y*q.Y)
+	result.X = float32(math.Atan2(float64(x0), float64(x1)))
+
+	// Pitch (y-axis rotation)
+	y0 := 2.0 * (q.W*q.Y - q.Z*q.X)
+	if y0 > 1 {
+		y0 = 1
+	}
+	if y0 < -1 {
+		y0 = -1
+	}
+	result.Y = float32(math.Asin(float64(y0)))
+
+	// Yaw (z-axis rotation)
+	z0 := 2.0 * (q.W*q.Z + q.X*q.Y)
+	z1 := 1.0 - 2.0*(q.Y*q.Y+q.Z*q.Z)
+	result.Z = float32(math.Atan2(float64(z0), float64(z1)))
+
+	return result
+
 }
 
 // Clamp - Clamp float value
