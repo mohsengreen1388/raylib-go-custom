@@ -476,6 +476,10 @@ func GetParentBone(model Model,boneId int)int32{
 	return *(*int32)(unsafe.Pointer(&result))
 }
 
+func IsModelReady(model Model) bool {
+	return ((model.Meshes != nil) && (model.Materials != nil) && (model.MeshMaterial != nil) && (model.MeshCount > 0) && (model.MaterialCount > 0))
+}
+
 // UnloadModelAnimation - Unload animation data
 func UnloadModelAnimation(anim ModelAnimation) {
 	canim := anim.cptr()
