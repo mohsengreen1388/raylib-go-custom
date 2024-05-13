@@ -8,12 +8,24 @@ import "C"
 
 import (
 	"image/color"
+	"runtime"
+	"slices"
 	"unsafe"
 )
+
+// newMeshFromPointer - Returns new Mesh from pointer
+func newMeshFromPointer(ptr unsafe.Pointer) Mesh {
+	return *(*Mesh)(ptr)
+}
 
 // cptr returns C pointer
 func (m *Mesh) cptr() *C.Mesh {
 	return (*C.Mesh)(unsafe.Pointer(m))
+}
+
+// newMaterialFromPointer - Returns new Material from pointer
+func newMaterialFromPointer(ptr unsafe.Pointer) Material {
+	return *(*Material)(ptr)
 }
 
 // cptr returns C pointer
@@ -21,9 +33,19 @@ func (m *Material) cptr() *C.Material {
 	return (*C.Material)(unsafe.Pointer(m))
 }
 
+// newModelFromPointer - Returns new Model from pointer
+func newModelFromPointer(ptr unsafe.Pointer) Model {
+	return *(*Model)(ptr)
+}
+
 // cptr returns C pointer
 func (m *Model) cptr() *C.Model {
 	return (*C.Model)(unsafe.Pointer(m))
+}
+
+// newRayFromPointer - Returns new Ray from pointer
+func newRayFromPointer(ptr unsafe.Pointer) Ray {
+	return *(*Ray)(ptr)
 }
 
 // cptr returns C pointer
@@ -31,9 +53,19 @@ func (r *Ray) cptr() *C.Ray {
 	return (*C.Ray)(unsafe.Pointer(r))
 }
 
+// newModelAnimationFromPointer - Returns new ModelAnimation from pointer
+func newModelAnimationFromPointer(ptr unsafe.Pointer) ModelAnimation {
+	return *(*ModelAnimation)(ptr)
+}
+
 // cptr returns C pointer
 func (r *ModelAnimation) cptr() *C.ModelAnimation {
 	return (*C.ModelAnimation)(unsafe.Pointer(r))
+}
+
+// newRayCollisionFromPointer - Returns new RayCollision from pointer
+func newRayCollisionFromPointer(ptr unsafe.Pointer) RayCollision {
+	return *(*RayCollision)(ptr)
 }
 
 // DrawLine3D - Draw a line in 3D world space
@@ -59,6 +91,15 @@ func DrawCircle3D(center Vector3, radius float32, rotationAxis Vector3, rotation
 	crotationAngle := (C.float)(rotationAngle)
 	ccolor := colorCptr(col)
 	C.DrawCircle3D(*ccenter, cradius, *crotationAxis, crotationAngle, *ccolor)
+}
+
+// DrawTriangle3D - Draw a color-filled triangle (vertex in counter-clockwise order!)
+func DrawTriangle3D(v1 Vector3, v2 Vector3, v3 Vector3, col color.RGBA) {
+	cv1 := v1.cptr()
+	cv2 := v2.cptr()
+	cv3 := v3.cptr()
+	ccolor := colorCptr(col)
+	C.DrawTriangle3D(*cv1, *cv2, *cv3, *ccolor)
 }
 
 // DrawCube - Draw cube
@@ -172,10 +213,10 @@ func DrawCylinderWiresEx(startPos Vector3, endPos Vector3, startRadius float32, 
 // DrawCapsule - Draw a capsule with the center of its sphere caps at startPos and endPos
 func DrawCapsule(startPos, endPos Vector3, radius float32, slices, rings int32, col color.RGBA) {
 	cstartPos := startPos.cptr()
-	cendPos := startPos.cptr()
+	cendPos := endPos.cptr()
 	cradius := (C.float)(radius)
 	cslices := (C.int)(slices)
-	crings := (C.int)(slices)
+	crings := (C.int)(rings)
 	ccolor := colorCptr(col)
 	C.DrawCapsule(*cstartPos, *cendPos, cradius, cslices, crings, *ccolor)
 }
@@ -183,10 +224,10 @@ func DrawCapsule(startPos, endPos Vector3, radius float32, slices, rings int32, 
 // DrawCapsuleWires - Draw capsule wireframe with the center of its sphere caps at startPos and endPos
 func DrawCapsuleWires(startPos, endPos Vector3, radius float32, slices, rings int32, col color.RGBA) {
 	cstartPos := startPos.cptr()
-	cendPos := startPos.cptr()
+	cendPos := endPos.cptr()
 	cradius := (C.float)(radius)
 	cslices := (C.int)(slices)
-	crings := (C.int)(slices)
+	crings := (C.int)(rings)
 	ccolor := colorCptr(col)
 	C.DrawCapsuleWires(*cstartPos, *cendPos, cradius, cslices, crings, *ccolor)
 }
@@ -230,6 +271,14 @@ func LoadModelFromMesh(data Mesh) Model {
 	return v
 }
 
+// IsModelReady - Check if a model is ready
+func IsModelReady(model Model) bool {
+	cmodel := model.cptr()
+	ret := C.IsModelReady(*cmodel)
+	v := bool(ret)
+	return v
+}
+
 // UnloadModel - Unload model from memory (RAM and/or VRAM)
 func UnloadModel(model Model) {
 	cmodel := model.cptr()
@@ -244,10 +293,187 @@ func GetModelBoundingBox(model Model) BoundingBox {
 	return v
 }
 
+// DrawModel - Draw a model (with texture if set)
+func DrawModel(model Model, position Vector3, scale float32, tint color.RGBA) {
+	cmodel := model.cptr()
+	cposition := position.cptr()
+	cscale := (C.float)(scale)
+	ctint := colorCptr(tint)
+	C.DrawModel(*cmodel, *cposition, cscale, *ctint)
+}
+
+// DrawModelEx - Draw a model with extended parameters
+func DrawModelEx(model Model, position Vector3, rotationAxis Vector3, rotationAngle float32, scale Vector3, tint color.RGBA) {
+	cmodel := model.cptr()
+	cposition := position.cptr()
+	crotationAxis := rotationAxis.cptr()
+	crotationAngle := (C.float)(rotationAngle)
+	cscale := scale.cptr()
+	ctint := colorCptr(tint)
+	C.DrawModelEx(*cmodel, *cposition, *crotationAxis, crotationAngle, *cscale, *ctint)
+}
+
+// DrawModelWires - Draw a model wires (with texture if set)
+func DrawModelWires(model Model, position Vector3, scale float32, tint color.RGBA) {
+	cmodel := model.cptr()
+	cposition := position.cptr()
+	cscale := (C.float)(scale)
+	ctint := colorCptr(tint)
+	C.DrawModelWires(*cmodel, *cposition, cscale, *ctint)
+}
+
+// DrawModelWiresEx - Draw a model wires (with texture if set) with extended parameters
+func DrawModelWiresEx(model Model, position Vector3, rotationAxis Vector3, rotationAngle float32, scale Vector3, tint color.RGBA) {
+	cmodel := model.cptr()
+	cposition := position.cptr()
+	crotationAxis := rotationAxis.cptr()
+	crotationAngle := (C.float)(rotationAngle)
+	cscale := scale.cptr()
+	ctint := colorCptr(tint)
+	C.DrawModelWiresEx(*cmodel, *cposition, *crotationAxis, crotationAngle, *cscale, *ctint)
+}
+
+// DrawBoundingBox - Draw bounding box (wires)
+func DrawBoundingBox(box BoundingBox, col color.RGBA) {
+	cbox := box.cptr()
+	ccolor := colorCptr(col)
+	C.DrawBoundingBox(*cbox, *ccolor)
+}
+
+// DrawBillboard - Draw a billboard texture
+func DrawBillboard(camera Camera, texture Texture2D, center Vector3, size float32, tint color.RGBA) {
+	ccamera := camera.cptr()
+	ctexture := texture.cptr()
+	ccenter := center.cptr()
+	csize := (C.float)(size)
+	ctint := colorCptr(tint)
+	C.DrawBillboard(*ccamera, *ctexture, *ccenter, csize, *ctint)
+}
+
+// DrawBillboardRec - Draw a billboard texture defined by sourceRec
+func DrawBillboardRec(camera Camera, texture Texture2D, sourceRec Rectangle, center Vector3, size Vector2, tint color.RGBA) {
+	ccamera := camera.cptr()
+	ctexture := texture.cptr()
+	csourceRec := sourceRec.cptr()
+	ccenter := center.cptr()
+	csize := size.cptr()
+	ctint := colorCptr(tint)
+	C.DrawBillboardRec(*ccamera, *ctexture, *csourceRec, *ccenter, *csize, *ctint)
+}
+
+// DrawBillboardPro - Draw a billboard texture with pro parameters
+func DrawBillboardPro(camera Camera, texture Texture2D, sourceRec Rectangle, position Vector3, up Vector3, size Vector2, origin Vector2, rotation float32, tint Color) {
+	ccamera := camera.cptr()
+	ctexture := texture.cptr()
+	csourceRec := sourceRec.cptr()
+	cposition := position.cptr()
+	cup := up.cptr()
+	csize := size.cptr()
+	corigin := origin.cptr()
+	crotation := (C.float)(rotation)
+	ctint := colorCptr(tint)
+	C.DrawBillboardPro(*ccamera, *ctexture, *csourceRec, *cposition, *cup, *csize, *corigin, crotation, *ctint)
+}
+
+// List of VaoIDs of meshes created by calling UploadMesh()
+// Used by UnloadMesh() to determine if mesh is go-managed or C-allocated
+var goManagedMeshIDs = make([]uint32, 0)
+
+// UploadMesh - Upload vertex data into a VAO (if supported) and VBO
+func UploadMesh(mesh *Mesh, dynamic bool) {
+	// check if mesh has already been uploaded to prevent duplication
+	if mesh.VaoID != 0 {
+		TraceLog(LogWarning, "VAO: [ID %d] Trying to re-load an already loaded mesh", mesh.VaoID)
+		return
+	}
+
+	pinner := runtime.Pinner{}
+	// Mesh pointer fields must be pinned to allow a Mesh pointer to be passed to C.UploadMesh() below
+	// nil checks are required because Pin() will panic if passed nil
+	if mesh.Vertices != nil {
+		pinner.Pin(mesh.Vertices)
+	}
+	if mesh.Texcoords != nil {
+		pinner.Pin(mesh.Texcoords)
+	}
+	if mesh.Texcoords2 != nil {
+		pinner.Pin(mesh.Texcoords2)
+	}
+	if mesh.Normals != nil {
+		pinner.Pin(mesh.Normals)
+	}
+	if mesh.Tangents != nil {
+		pinner.Pin(mesh.Tangents)
+	}
+	if mesh.Colors != nil {
+		pinner.Pin(mesh.Colors)
+	}
+	if mesh.Indices != nil {
+		pinner.Pin(mesh.Indices)
+	}
+	if mesh.AnimVertices != nil {
+		pinner.Pin(mesh.AnimVertices)
+	}
+	if mesh.AnimNormals != nil {
+		pinner.Pin(mesh.AnimNormals)
+	}
+	if mesh.BoneIds != nil {
+		pinner.Pin(mesh.BoneIds)
+	}
+	if mesh.BoneWeights != nil {
+		pinner.Pin(mesh.BoneWeights)
+	}
+	// VboID of a new mesh should always be nil before uploading, but including this in case a mesh happens to have it set.
+	if mesh.VboID != nil {
+		pinner.Pin(mesh.VboID)
+	}
+
+	cMesh := mesh.cptr()
+	C.UploadMesh(cMesh, C.bool(dynamic))
+
+	// Add new mesh VaoID to list
+	goManagedMeshIDs = append(goManagedMeshIDs, mesh.VaoID)
+
+	pinner.Unpin()
+}
+
+// UpdateMeshBuffer - Update mesh vertex data in GPU for a specific buffer index
+func UpdateMeshBuffer(mesh Mesh, index int, data []byte, offset int) {
+	cindex := (C.int)(index)
+	coffset := (C.int)(offset)
+	cdataSize := (C.int)(len(data))
+	C.UpdateMeshBuffer(*mesh.cptr(), cindex, unsafe.Pointer(&data[0]), cdataSize, coffset)
+}
+
 // UnloadMesh - Unload mesh from memory (RAM and/or VRAM)
 func UnloadMesh(mesh *Mesh) {
-	cmesh := mesh.cptr()
-	C.UnloadMesh(*cmesh)
+	// Check list of go-managed mesh IDs
+	if slices.Contains(goManagedMeshIDs, mesh.VaoID) {
+		// C.UnloadMesh() only needs to read the VaoID & VboID
+		// passing a temporary struct with all other fields nil makes it safe for the C code to call free()
+		tempMesh := Mesh{
+			VaoID: mesh.VaoID,
+			VboID: mesh.VboID,
+		}
+		cmesh := tempMesh.cptr()
+		C.UnloadMesh(*cmesh)
+
+		// remove mesh VaoID from list
+		goManagedMeshIDs = slices.DeleteFunc(goManagedMeshIDs, func(id uint32) bool { return id == mesh.VaoID })
+	} else {
+		cmesh := mesh.cptr()
+		C.UnloadMesh(*cmesh)
+	}
+}
+
+// DrawMesh - Draw a single mesh
+func DrawMesh(mesh Mesh, material Material, transform Matrix) {
+	C.DrawMesh(*mesh.cptr(), *material.cptr(), *transform.cptr())
+}
+
+// DrawMeshInstanced - Draw mesh with instanced rendering
+func DrawMeshInstanced(mesh Mesh, material Material, transforms []Matrix, instances int) {
+	C.DrawMeshInstanced(*mesh.cptr(), *material.cptr(), transforms[0].cptr(), C.int(instances))
 }
 
 // ExportMesh - Export mesh as an OBJ file
@@ -256,6 +482,14 @@ func ExportMesh(mesh Mesh, fileName string) {
 	defer C.free(unsafe.Pointer(cfileName))
 	cmesh := mesh.cptr()
 	C.ExportMesh(*cmesh, cfileName)
+}
+
+// GetMeshBoundingBox - Compute mesh bounding box limits
+func GetMeshBoundingBox(mesh Mesh) BoundingBox {
+	cmesh := mesh.cptr()
+	ret := C.GetMeshBoundingBox(*cmesh)
+	v := newBoundingBoxFromPointer(unsafe.Pointer(&ret))
+	return v
 }
 
 // GenMeshPoly - Generate polygonal mesh
@@ -396,6 +630,14 @@ func LoadMaterialDefault() Material {
 	return v
 }
 
+// IsMaterialReady - Check if a material is ready
+func IsMaterialReady(material Material) bool {
+	cmaterial := material.cptr()
+	ret := C.IsMaterialReady(*cmaterial)
+	v := bool(ret)
+	return v
+}
+
 // UnloadMaterial - Unload material textures from VRAM
 func UnloadMaterial(material Material) {
 	cmaterial := material.cptr()
@@ -422,62 +664,18 @@ func SetModelMeshMaterial(model *Model, meshId int32, materialId int32) {
 func LoadModelAnimations(fileName string) []ModelAnimation {
 	cfileName := C.CString(fileName)
 	defer C.free(unsafe.Pointer(cfileName))
-	ccount := C.uint(0)
+	ccount := C.int(0)
 	ret := C.LoadModelAnimations(cfileName, &ccount)
 	v := (*[1 << 24]ModelAnimation)(unsafe.Pointer(ret))[:int(ccount)]
 	return v
 }
 
 // UpdateModelAnimation - Update model animation pose
-func UpdateModelAnimation(model Model, anim ModelAnimation, frame int32){
+func UpdateModelAnimation(model Model, anim ModelAnimation, frame int32) {
 	cmodel := model.cptr()
 	canim := anim.cptr()
 	cframe := (C.int)(frame)
 	C.UpdateModelAnimation(*cmodel, *canim, cframe)
-}
-
-// Get framePoses for per bone
-func GetBonePose(anim ModelAnimation, frame int32,boneId int32)Transform{
-	canim := anim.cptr()
-	cframe := (C.int)(frame)
-	cboneId := (C.int)(boneId)
-	result := C.GetBonePose(*canim,cframe,cboneId)
-	return *(*Transform)(unsafe.Pointer(&result))
-}
-
-// Get bindPose Model
-func GetBindPose(model Model,boneId int32)Transform{
-	cmodel := model.cptr()
-	cboneId := (C.int)(boneId)
-	result := C.GetBindPose(*cmodel,cboneId)
-	return *(*Transform)(unsafe.Pointer(&result))
-}
-
-// Get framePoses for per bone
-func BoneCount(model Model)int32{
-	cmodel := model.cptr()
-	result := C.BoneCount(*cmodel)
-	return *(*int32)(unsafe.Pointer(&result))
-}
-
-//Get NameBone
-func GetBoneName(model Model,boneId int)string{
-	cmodel := model.cptr()
-	cboneId := (C.int)(boneId)
-	Name := C.GoString(C.GetBoneName(*cmodel,cboneId))
-    return Name
-}
-
-// Get ParentBone
-func GetParentBone(model Model,boneId int)int32{
-	cmodel := model.cptr()
-	cboneId := (C.int)(boneId)
-	result := C.GetParentBone(*cmodel,cboneId)
-	return *(*int32)(unsafe.Pointer(&result))
-}
-
-func IsModelReady(model Model) bool {
-	return ((model.Meshes != nil) && (model.Materials != nil) && (model.MeshMaterial != nil) && (model.MeshCount > 0) && (model.MaterialCount > 0))
 }
 
 // UnloadModelAnimation - Unload animation data
@@ -488,7 +686,7 @@ func UnloadModelAnimation(anim ModelAnimation) {
 
 // UnloadModelAnimations - Unload animation array data
 func UnloadModelAnimations(animations []ModelAnimation) {
-	C.UnloadModelAnimations((*C.ModelAnimation)(unsafe.Pointer(&animations[0])), (C.uint)(len(animations)))
+	C.UnloadModelAnimations((*C.ModelAnimation)(unsafe.Pointer(&animations[0])), (C.int)(len(animations)))
 }
 
 // IsModelAnimationValid - Check model animation skeleton match
@@ -497,92 +695,6 @@ func IsModelAnimationValid(model Model, anim ModelAnimation) bool {
 	canim := anim.cptr()
 	ret := C.IsModelAnimationValid(*cmodel, *canim)
 	v := bool(ret)
-	return v
-}
-
-// DrawModel - Draw a model (with texture if set)
-func DrawModel(model Model, position Vector3, scale float32, tint color.RGBA) {
-	cmodel := model.cptr()
-	cposition := position.cptr()
-	cscale := (C.float)(scale)
-	ctint := colorCptr(tint)
-	C.DrawModel(*cmodel, *cposition, cscale, *ctint)
-}
-
-// DrawModelEx - Draw a model with extended parameters
-func DrawModelEx(model Model, position Vector3, rotationAxis Vector3, rotationAngle float32, scale Vector3, tint color.RGBA) {
-	cmodel := model.cptr()
-	cposition := position.cptr()
-	crotationAxis := rotationAxis.cptr()
-	crotationAngle := (C.float)(rotationAngle)
-	cscale := scale.cptr()
-	ctint := colorCptr(tint)
-	C.DrawModelEx(*cmodel, *cposition, *crotationAxis, crotationAngle, *cscale, *ctint)
-}
-
-// DrawModelWires - Draw a model wires (with texture if set)
-func DrawModelWires(model Model, position Vector3, scale float32, tint color.RGBA) {
-	cmodel := model.cptr()
-	cposition := position.cptr()
-	cscale := (C.float)(scale)
-	ctint := colorCptr(tint)
-	C.DrawModelWires(*cmodel, *cposition, cscale, *ctint)
-}
-
-// DrawModelWiresEx - Draw a model wires (with texture if set) with extended parameters
-func DrawModelWiresEx(model Model, position Vector3, rotationAxis Vector3, rotationAngle float32, scale Vector3, tint color.RGBA) {
-	cmodel := model.cptr()
-	cposition := position.cptr()
-	crotationAxis := rotationAxis.cptr()
-	crotationAngle := (C.float)(rotationAngle)
-	cscale := scale.cptr()
-	ctint := colorCptr(tint)
-	C.DrawModelWiresEx(*cmodel, *cposition, *crotationAxis, crotationAngle, *cscale, *ctint)
-}
-
-// DrawBoundingBox - Draw bounding box (wires)
-func DrawBoundingBox(box BoundingBox, col color.RGBA) {
-	cbox := box.cptr()
-	ccolor := colorCptr(col)
-	C.DrawBoundingBox(*cbox, *ccolor)
-}
-
-// DrawBillboard - Draw a billboard texture
-func DrawBillboard(camera Camera, texture Texture2D, center Vector3, size float32, tint color.RGBA) {
-	ccamera := camera.cptr()
-	ctexture := texture.cptr()
-	ccenter := center.cptr()
-	csize := (C.float)(size)
-	ctint := colorCptr(tint)
-	C.DrawBillboard(*ccamera, *ctexture, *ccenter, csize, *ctint)
-}
-
-// DrawBillboardRec - Draw a billboard texture defined by sourceRec
-func DrawBillboardRec(camera Camera, texture Texture2D, sourceRec Rectangle, center Vector3, size Vector2, tint color.RGBA) {
-	ccamera := camera.cptr()
-	ctexture := texture.cptr()
-	csourceRec := sourceRec.cptr()
-	ccenter := center.cptr()
-	csize := size.cptr()
-	ctint := colorCptr(tint)
-	C.DrawBillboardRec(*ccamera, *ctexture, *csourceRec, *ccenter, *csize, *ctint)
-}
-
-// DrawMesh - Draw a single mesh
-func DrawMesh(mesh Mesh, material Material, transform Matrix) {
-	C.DrawMesh(*mesh.cptr(), *material.cptr(), *transform.cptr())
-}
-
-// DrawMeshInstanced - Draw mesh with instanced rendering
-func DrawMeshInstanced(mesh Mesh, material Material, transforms []Matrix, instances int) {
-	C.DrawMeshInstanced(*mesh.cptr(), *material.cptr(), transforms[0].cptr(), C.int(instances))
-}
-
-// GetMeshBoundingBox - Compute mesh bounding box limits
-func GetMeshBoundingBox(mesh Mesh) BoundingBox {
-	cmesh := mesh.cptr()
-	ret := C.GetMeshBoundingBox(*cmesh)
-	v := newBoundingBoxFromPointer(unsafe.Pointer(&ret))
 	return v
 }
 
@@ -668,7 +780,44 @@ func GetRayCollisionQuad(ray Ray, p1, p2, p3, p4 Vector3) RayCollision {
 	return v
 }
 
-// UploadMesh - Upload vertex data into a VAO (if supported) and VBO
-func UploadMesh(mesh *Mesh, dynamic bool) {
-	C.UploadMesh(mesh.cptr(), C.bool(dynamic))
+//Custom func 
+
+// Get framePoses for per bone
+func GetBonePose(anim ModelAnimation, frame int32,boneId int32)Transform{
+	canim := anim.cptr()
+	cframe := (C.int)(frame)
+	cboneId := (C.int)(boneId)
+	result := C.GetBonePose(*canim,cframe,cboneId)
+	return *(*Transform)(unsafe.Pointer(&result))
+}
+
+// Get bindPose Model
+func GetBindPose(model Model,boneId int32)Transform{
+	cmodel := model.cptr()
+	cboneId := (C.int)(boneId)
+	result := C.GetBindPose(*cmodel,cboneId)
+	return *(*Transform)(unsafe.Pointer(&result))
+}
+
+// Get framePoses for per bone
+func BoneCount(model Model)int32{
+	cmodel := model.cptr()
+	result := C.BoneCount(*cmodel)
+	return *(*int32)(unsafe.Pointer(&result))
+}
+
+//Get NameBone
+func GetBoneName(model Model,boneId int)string{
+	cmodel := model.cptr()
+	cboneId := (C.int)(boneId)
+	Name := C.GoString(C.GetBoneName(*cmodel,cboneId))
+    return Name
+}
+
+// Get ParentBone
+func GetParentBone(model Model,boneId int)int32{
+	cmodel := model.cptr()
+	cboneId := (C.int)(boneId)
+	result := C.GetParentBone(*cmodel,cboneId)
+	return *(*int32)(unsafe.Pointer(&result))
 }

@@ -12,6 +12,11 @@ import (
 	"unsafe"
 )
 
+// newImageFromPointer - Returns new Image from pointer
+func newImageFromPointer(ptr unsafe.Pointer) *Image {
+	return (*Image)(ptr)
+}
+
 // cptr returns C pointer
 func (i *Image) cptr() *C.Image {
 	return (*C.Image)(unsafe.Pointer(i))
@@ -31,14 +36,49 @@ func (i *Image) ToImage() image.Image {
 	return img
 }
 
+// newTexture2DFromPointer - Returns new Texture2D from pointer
+func newTexture2DFromPointer(ptr unsafe.Pointer) Texture2D {
+	return *(*Texture2D)(ptr)
+}
+
 // cptr returns C pointer
 func (t *Texture2D) cptr() *C.Texture2D {
 	return (*C.Texture2D)(unsafe.Pointer(t))
 }
 
+// newRenderTexture2DFromPointer - Returns new RenderTexture2D from pointer
+func newRenderTexture2DFromPointer(ptr unsafe.Pointer) RenderTexture2D {
+	return *(*RenderTexture2D)(ptr)
+}
+
 // cptr returns C pointer
 func (r *RenderTexture2D) cptr() *C.RenderTexture2D {
 	return (*C.RenderTexture2D)(unsafe.Pointer(r))
+}
+
+// NewImageFromImage - Returns new Image from Go image.Image
+func NewImageFromImage(img image.Image) *Image {
+	size := img.Bounds().Size()
+
+	cx := (C.int)(size.X)
+	cy := (C.int)(size.Y)
+	ccolor := colorCptr(White)
+	ret := C.GenImageColor(cx, cy, *ccolor)
+
+	for y := 0; y < size.Y; y++ {
+		for x := 0; x < size.X; x++ {
+			color := img.At(x, y)
+			r, g, b, a := color.RGBA()
+			rcolor := NewColor(uint8(r), uint8(g), uint8(b), uint8(a))
+			ccolor = colorCptr(rcolor)
+
+			cx = (C.int)(x)
+			cy = (C.int)(y)
+			C.ImageDrawPixel(&ret, cx, cy, *ccolor)
+		}
+	}
+	v := newImageFromPointer(unsafe.Pointer(&ret))
+	return v
 }
 
 // LoadImage - Load an image into CPU memory (RAM)
@@ -59,6 +99,17 @@ func LoadImageRaw(fileName string, width, height int32, format PixelFormat, head
 	cformat := (C.int)(format)
 	cheaderSize := (C.int)(headerSize)
 	ret := C.LoadImageRaw(cfileName, cwidth, cheight, cformat, cheaderSize)
+	v := newImageFromPointer(unsafe.Pointer(&ret))
+	return v
+}
+
+// LoadImageSvg - Load image from SVG file data or string with specified size
+func LoadImageSvg(fileNameOrString string, width, height int32) *Image {
+	cfileNameOrString := C.CString(fileNameOrString)
+	defer C.free(unsafe.Pointer(cfileNameOrString))
+	cwidth := (C.int)(width)
+	cheight := (C.int)(height)
+	ret := C.LoadImageSvg(cfileNameOrString, cwidth, cheight)
 	v := newImageFromPointer(unsafe.Pointer(&ret))
 	return v
 }
@@ -84,6 +135,29 @@ func LoadImageFromMemory(fileType string, fileData []byte, dataSize int32) *Imag
 	return v
 }
 
+// LoadImageFromTexture - Get pixel data from GPU texture and return an Image
+func LoadImageFromTexture(texture Texture2D) *Image {
+	ctexture := texture.cptr()
+	ret := C.LoadImageFromTexture(*ctexture)
+	v := newImageFromPointer(unsafe.Pointer(&ret))
+	return v
+}
+
+// LoadImageFromScreen - Load image from screen buffer (screenshot)
+func LoadImageFromScreen() *Image {
+	ret := C.LoadImageFromScreen()
+	v := newImageFromPointer(unsafe.Pointer(&ret))
+	return v
+}
+
+// IsImageReady - Check if an image is ready
+func IsImageReady(image *Image) bool {
+	cimage := image.cptr()
+	ret := C.IsImageReady(*cimage)
+	v := bool(ret)
+	return v
+}
+
 // LoadTexture - Load an image as texture into GPU memory
 func LoadTexture(fileName string) Texture2D {
 	cfileName := C.CString(fileName)
@@ -101,16 +175,6 @@ func LoadTextureFromImage(image *Image) Texture2D {
 	return v
 }
 
-// LoadTextureCubemap - Loads a texture for a cubemap using given layout
-func LoadTextureCubemap(image *Image, layout int) Texture2D {
-	cimage := image.cptr()
-	clayout := (C.int)(layout)
-	ret := C.LoadTextureCubemap(*cimage, clayout)
-	v := newTexture2DFromPointer(unsafe.Pointer(&ret))
-	return v
-}
-
-
 // LoadRenderTexture - Load a texture to be used for rendering
 func LoadRenderTexture(width, height int32) RenderTexture2D {
 	cwidth := (C.int)(width)
@@ -120,16 +184,41 @@ func LoadRenderTexture(width, height int32) RenderTexture2D {
 	return v
 }
 
+// LoadTextureCubemap - Loads a texture for a cubemap using given layout
+func LoadTextureCubemap(image *Image, layout int32) Texture2D {
+	cimage := image.cptr()
+	clayout := (C.int)(layout)
+	ret := C.LoadTextureCubemap(*cimage, clayout)
+	v := newTexture2DFromPointer(unsafe.Pointer(&ret))
+	return v
+}
+
 // UnloadImage - Unload image from CPU memory (RAM)
 func UnloadImage(image *Image) {
 	cimage := image.cptr()
 	C.UnloadImage(*cimage)
 }
 
+// IsTextureReady - Check if a texture is ready
+func IsTextureReady(texture Texture2D) bool {
+	ctexture := texture.cptr()
+	ret := C.IsTextureReady(*ctexture)
+	v := bool(ret)
+	return v
+}
+
 // UnloadTexture - Unload texture from GPU memory
 func UnloadTexture(texture Texture2D) {
 	ctexture := texture.cptr()
 	C.UnloadTexture(*ctexture)
+}
+
+// IsRenderTextureReady - Check if a render texture is ready
+func IsRenderTextureReady(target RenderTexture2D) bool {
+	ctarget := target.cptr()
+	ret := C.IsRenderTextureReady(*ctarget)
+	v := bool(ret)
+	return v
 }
 
 // UnloadRenderTexture - Unload render texture from GPU memory
@@ -145,12 +234,9 @@ func LoadImageColors(img *Image) []color.RGBA {
 	return (*[1 << 24]color.RGBA)(unsafe.Pointer(ret))[0 : img.Width*img.Height]
 }
 
-// LoadImageFromTexture - Get pixel data from GPU texture and return an Image
-func LoadImageFromTexture(texture Texture2D) *Image {
-	ctexture := texture.cptr()
-	ret := C.LoadImageFromTexture(*ctexture)
-	v := newImageFromPointer(unsafe.Pointer(&ret))
-	return v
+// UnloadImageColors - Unload color data loaded with LoadImageColors()
+func UnloadImageColors(cols []color.RGBA) {
+	C.UnloadImageColors((*C.Color)(unsafe.Pointer(&cols[0])))
 }
 
 // UpdateTexture - Update GPU texture with new data
@@ -169,12 +255,23 @@ func UpdateTextureRec(texture Texture2D, rec Rectangle, pixels []color.RGBA) {
 }
 
 // ExportImage - Export image as a PNG file
-func ExportImage(image Image, name string) {
-	cname := C.CString(name)
-	defer C.free(unsafe.Pointer(cname))
+func ExportImage(image Image, fileName string) bool {
+	cfileName := C.CString(fileName)
+	defer C.free(unsafe.Pointer(cfileName))
+	cimage := image.cptr()
+	return bool(C.ExportImage(*cimage, cfileName))
+}
+
+// ExportImageToMemory - Export image to memory buffer
+func ExportImageToMemory(image Image, fileType string) []byte {
+	cfileType := C.CString(fileType)
+	defer C.free(unsafe.Pointer(cfileType))
 	cimage := image.cptr()
 
-	C.ExportImage(*cimage, cname)
+	var size C.int
+	ret := C.ExportImageToMemory(*cimage, cfileType, &size)
+	v := unsafe.Slice((*byte)(unsafe.Pointer(ret)), size)
+	return v
 }
 
 // ImageCopy - Create an image duplicate (useful for transformations)
@@ -183,6 +280,15 @@ func ImageCopy(image *Image) *Image {
 	ret := C.ImageCopy(*cimage)
 	v := newImageFromPointer(unsafe.Pointer(&ret))
 	return v
+}
+
+// Create an image from another image piece
+func ImageFromImage(image Image, rec Rectangle) Image {
+	cimage := image.cptr()
+	crec := rec.cptr()
+	ret := C.ImageFromImage(*cimage, *crec)
+	v := newImageFromPointer(unsafe.Pointer(&ret))
+	return *v
 }
 
 // ImageText - Create an image from text (default font)
@@ -258,6 +364,13 @@ func ImageAlphaPremultiply(image *Image) {
 	C.ImageAlphaPremultiply(cimage)
 }
 
+// ImageBlurGaussian - Apply box blur
+func ImageBlurGaussian(image *Image, blurSize int32) {
+	cimage := image.cptr()
+	cblurSize := C.int(blurSize)
+	C.ImageBlurGaussian(cimage, cblurSize)
+}
+
 // ImageResize - Resize an image (bilinear filtering)
 func ImageResize(image *Image, newWidth, newHeight int32) {
 	cimage := image.cptr()
@@ -311,6 +424,13 @@ func ImageFlipVertical(image *Image) {
 func ImageFlipHorizontal(image *Image) {
 	cimage := image.cptr()
 	C.ImageFlipHorizontal(cimage)
+}
+
+// ImageRotate - Rotate image by input angle in degrees (-359 to 359)
+func ImageRotate(image *Image, degrees int32) {
+	cimage := image.cptr()
+	cdegrees := (C.int)(degrees)
+	C.ImageRotate(cimage, cdegrees)
 }
 
 // ImageRotateCW - Rotate image clockwise 90deg
@@ -542,26 +662,15 @@ func GenImageColor(width, height int, col color.RGBA) *Image {
 	return v
 }
 
-// GenImageGradientV - Generate image: vertical gradient
-func GenImageGradientV(width, height int, top, bottom color.RGBA) *Image {
+// GenImageGradientLinear - Generate image: linear gradient, direction in degrees [0..360], 0=Vertical gradient
+func GenImageGradientLinear(width, height, direction int, start, end color.RGBA) *Image {
 	cwidth := (C.int)(width)
 	cheight := (C.int)(height)
-	ctop := colorCptr(top)
-	cbottom := colorCptr(bottom)
+	cdensity := (C.int)(direction)
+	cstart := colorCptr(start)
+	cend := colorCptr(end)
 
-	ret := C.GenImageGradientV(cwidth, cheight, *ctop, *cbottom)
-	v := newImageFromPointer(unsafe.Pointer(&ret))
-	return v
-}
-
-// GenImageGradientH - Generate image: horizontal gradient
-func GenImageGradientH(width, height int, left, right color.RGBA) *Image {
-	cwidth := (C.int)(width)
-	cheight := (C.int)(height)
-	cleft := colorCptr(left)
-	cright := colorCptr(right)
-
-	ret := C.GenImageGradientH(cwidth, cheight, *cleft, *cright)
+	ret := C.GenImageGradientLinear(cwidth, cheight, cdensity, *cstart, *cend)
 	v := newImageFromPointer(unsafe.Pointer(&ret))
 	return v
 }
@@ -575,6 +684,19 @@ func GenImageGradientRadial(width, height int, density float32, inner, outer col
 	couter := colorCptr(outer)
 
 	ret := C.GenImageGradientRadial(cwidth, cheight, cdensity, *cinner, *couter)
+	v := newImageFromPointer(unsafe.Pointer(&ret))
+	return v
+}
+
+// GenImageGradientSquare - Generate image: square gradient
+func GenImageGradientSquare(width, height int, density float32, inner, outer color.RGBA) *Image {
+	cwidth := (C.int)(width)
+	cheight := (C.int)(height)
+	cdensity := (C.float)(density)
+	cinner := colorCptr(inner)
+	couter := colorCptr(outer)
+
+	ret := C.GenImageGradientSquare(cwidth, cheight, cdensity, *cinner, *couter)
 	v := newImageFromPointer(unsafe.Pointer(&ret))
 	return v
 }
@@ -705,4 +827,20 @@ func DrawTexturePro(texture Texture2D, sourceRec, destRec Rectangle, origin Vect
 	crotation := (C.float)(rotation)
 	ctint := colorCptr(tint)
 	C.DrawTexturePro(*ctexture, *csourceRec, *cdestRec, *corigin, crotation, *ctint)
+}
+
+// cptr returns C pointer
+func (n *NPatchInfo) cptr() *C.NPatchInfo {
+	return (*C.NPatchInfo)(unsafe.Pointer(n))
+}
+
+// DrawTextureNPatch - Draws a texture (or part of it) that stretches or shrinks nicely using n-patch info
+func DrawTextureNPatch(texture Texture2D, nPatchInfo NPatchInfo, dest Rectangle, origin Vector2, rotation float32, tint color.RGBA) {
+	ctexture := texture.cptr()
+	cnPatchInfo := nPatchInfo.cptr()
+	cdest := dest.cptr()
+	corigin := origin.cptr()
+	crotation := (C.float)(rotation)
+	ctint := colorCptr(tint)
+	C.DrawTextureNPatch(*ctexture, *cnPatchInfo, *cdest, *corigin, crotation, *ctint)
 }

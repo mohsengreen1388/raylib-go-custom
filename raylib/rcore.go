@@ -11,9 +11,19 @@ import (
 	"unsafe"
 )
 
+// newVector2FromPointer - Returns new Vector2 from pointer
+func newVector2FromPointer(ptr unsafe.Pointer) Vector2 {
+	return *(*Vector2)(ptr)
+}
+
 // cptr returns C pointer
 func (v *Vector2) cptr() *C.Vector2 {
 	return (*C.Vector2)(unsafe.Pointer(v))
+}
+
+// newVector3FromPointer - Returns new Vector3 from pointer
+func newVector3FromPointer(ptr unsafe.Pointer) Vector3 {
+	return *(*Vector3)(ptr)
 }
 
 // cptr returns C pointer
@@ -21,9 +31,19 @@ func (v *Vector3) cptr() *C.Vector3 {
 	return (*C.Vector3)(unsafe.Pointer(v))
 }
 
+// newVector4FromPointer - Returns new Vector4 from pointer
+func newVector4FromPointer(ptr unsafe.Pointer) Vector4 {
+	return *(*Vector4)(ptr)
+}
+
 // cptr returns C pointer
 func (v *Vector4) cptr() *C.Vector4 {
 	return (*C.Vector4)(unsafe.Pointer(v))
+}
+
+// newMatrixFromPointer - Returns new Matrix from pointer
+func newMatrixFromPointer(ptr unsafe.Pointer) Matrix {
+	return *(*Matrix)(ptr)
 }
 
 // cptr returns C pointer
@@ -31,9 +51,19 @@ func (m *Matrix) cptr() *C.Matrix {
 	return (*C.Matrix)(unsafe.Pointer(m))
 }
 
+// newColorFromPointer - Returns new Color from pointer
+func newColorFromPointer(ptr unsafe.Pointer) color.RGBA {
+	return *(*color.RGBA)(ptr)
+}
+
 // colorCptr returns color C pointer
 func colorCptr(col color.RGBA) *C.Color {
 	return (*C.Color)(unsafe.Pointer(&col))
+}
+
+// newRectangleFromPointer - Returns new Rectangle from pointer
+func newRectangleFromPointer(ptr unsafe.Pointer) Rectangle {
+	return *(*Rectangle)(ptr)
 }
 
 // cptr returns C pointer
@@ -41,9 +71,19 @@ func (r *Rectangle) cptr() *C.Rectangle {
 	return (*C.Rectangle)(unsafe.Pointer(r))
 }
 
+// newCamera3DFromPointer - Returns new Camera3D from pointer
+func newCamera3DFromPointer(ptr unsafe.Pointer) Camera3D {
+	return *(*Camera3D)(ptr)
+}
+
 // cptr returns C pointer
 func (c *Camera) cptr() *C.Camera {
 	return (*C.Camera)(unsafe.Pointer(c))
+}
+
+// newCamera2DFromPointer - Returns new Camera2D from pointer
+func newCamera2DFromPointer(ptr unsafe.Pointer) Camera2D {
+	return *(*Camera2D)(ptr)
 }
 
 // cptr returns C pointer
@@ -51,12 +91,47 @@ func (c *Camera2D) cptr() *C.Camera2D {
 	return (*C.Camera2D)(unsafe.Pointer(c))
 }
 
+// newBoundingBoxFromPointer - Returns new BoundingBox from pointer
+func newBoundingBoxFromPointer(ptr unsafe.Pointer) BoundingBox {
+	return *(*BoundingBox)(ptr)
+}
+
 // cptr returns C pointer
 func (b *BoundingBox) cptr() *C.BoundingBox {
 	return (*C.BoundingBox)(unsafe.Pointer(b))
 }
 
-// WindowShouldClose - Check if KEY_ESCAPE pressed or Close icon pressed
+// newShaderFromPointer - Returns new Shader from pointer
+func newShaderFromPointer(ptr unsafe.Pointer) Shader {
+	return *(*Shader)(ptr)
+}
+
+// cptr returns C pointer
+func (s *Shader) cptr() *C.Shader {
+	return (*C.Shader)(unsafe.Pointer(s))
+}
+
+// newAutomationEventFromPointer - Returns new AutomationEvent from pointer
+func newAutomationEventFromPointer(ptr unsafe.Pointer) AutomationEvent {
+	return *(*AutomationEvent)(ptr)
+}
+
+// cptr returns C pointer
+func (a *AutomationEvent) cptr() *C.AutomationEvent {
+	return (*C.AutomationEvent)(unsafe.Pointer(a))
+}
+
+// newAutomationEventListFromPointer - Returns new AutomationEventList from pointer
+func newAutomationEventListFromPointer(ptr unsafe.Pointer) AutomationEventList {
+	return *(*AutomationEventList)(ptr)
+}
+
+// cptr returns C pointer
+func (a *AutomationEventList) cptr() *C.AutomationEventList {
+	return (*C.AutomationEventList)(unsafe.Pointer(a))
+}
+
+// WindowShouldClose - Check if KeyEscape pressed or Close icon pressed
 func WindowShouldClose() bool {
 	ret := C.WindowShouldClose()
 	v := bool(ret)
@@ -142,6 +217,11 @@ func ToggleFullscreen() {
 	C.ToggleFullscreen()
 }
 
+// ToggleBorderlessWindowed - Borderless fullscreen toggle (only PLATFORM_DESKTOP)
+func ToggleBorderlessWindowed() {
+	C.ToggleBorderlessWindowed()
+}
+
 // MaximizeWindow - Set window state: maximized, if resizable
 func MaximizeWindow() {
 	C.MaximizeWindow()
@@ -157,10 +237,17 @@ func RestoreWindow() {
 	C.RestoreWindow()
 }
 
-// SetWindowIcon - Set icon for window (only PLATFORM_DESKTOP)
+// SetWindowIcon - Set icon for window (single image, RGBA 32bit, only PLATFORM_DESKTOP)
 func SetWindowIcon(image Image) {
 	cimage := image.cptr()
 	C.SetWindowIcon(*cimage)
+}
+
+// SetWindowIcons - Set icon for window (multiple images, RGBA 32bit, only PLATFORM_DESKTOP)
+func SetWindowIcons(images []Image, count int32) {
+	cimages := (&images[0]).cptr()
+	cimagesCount := C.int(count)
+	C.SetWindowIcons(cimages, cimagesCount)
 }
 
 // SetWindowTitle - Set title for window (only PLATFORM_DESKTOP)
@@ -190,6 +277,13 @@ func SetWindowMinSize(w, h int) {
 	C.SetWindowMinSize(cw, ch)
 }
 
+// SetWindowMaxSize - Set window maximum dimensions (for FLAG_WINDOW_RESIZABLE)
+func SetWindowMaxSize(w, h int) {
+	cw := (C.int)(w)
+	ch := (C.int)(h)
+	C.SetWindowMaxSize(cw, ch)
+}
+
 // SetWindowSize - Set window dimensions
 func SetWindowSize(w, h int) {
 	cw := (C.int)(w)
@@ -205,7 +299,7 @@ func SetWindowOpacity(opacity float32) {
 
 // GetWindowHandle - Get native window handle
 func GetWindowHandle() unsafe.Pointer {
-	v := unsafe.Pointer((C.GetWindowHandle()))
+	v := C.GetWindowHandle()
 	return v
 }
 
@@ -408,6 +502,121 @@ func EndScissorMode() {
 	C.EndScissorMode()
 }
 
+// LoadShader - Load a custom shader and bind default locations
+func LoadShader(vsFileName string, fsFileName string) Shader {
+	cvsFileName := C.CString(vsFileName)
+	defer C.free(unsafe.Pointer(cvsFileName))
+
+	cfsFileName := C.CString(fsFileName)
+	defer C.free(unsafe.Pointer(cfsFileName))
+
+	if vsFileName == "" {
+		cvsFileName = nil
+	}
+
+	if fsFileName == "" {
+		cfsFileName = nil
+	}
+
+	ret := C.LoadShader(cvsFileName, cfsFileName)
+	v := newShaderFromPointer(unsafe.Pointer(&ret))
+
+	return v
+}
+
+// LoadShaderFromMemory - Load shader from code strings and bind default locations
+func LoadShaderFromMemory(vsCode string, fsCode string) Shader {
+	cvsCode := C.CString(vsCode)
+	defer C.free(unsafe.Pointer(cvsCode))
+
+	cfsCode := C.CString(fsCode)
+	defer C.free(unsafe.Pointer(cfsCode))
+
+	if vsCode == "" {
+		cvsCode = nil
+	}
+
+	if fsCode == "" {
+		cfsCode = nil
+	}
+
+	ret := C.LoadShaderFromMemory(cvsCode, cfsCode)
+	v := newShaderFromPointer(unsafe.Pointer(&ret))
+
+	return v
+}
+
+// IsShaderReady - Check if a shader is ready
+func IsShaderReady(shader Shader) bool {
+	cshader := shader.cptr()
+	ret := C.IsShaderReady(*cshader)
+	v := bool(ret)
+	return v
+}
+
+// GetShaderLocation - Get shader uniform location
+func GetShaderLocation(shader Shader, uniformName string) int32 {
+	cshader := shader.cptr()
+	cuniformName := C.CString(uniformName)
+	defer C.free(unsafe.Pointer(cuniformName))
+
+	ret := C.GetShaderLocation(*cshader, cuniformName)
+	v := (int32)(ret)
+	return v
+}
+
+// GetShaderLocationAttrib - Get shader attribute location
+func GetShaderLocationAttrib(shader Shader, attribName string) int32 {
+	cshader := shader.cptr()
+	cuniformName := C.CString(attribName)
+	defer C.free(unsafe.Pointer(cuniformName))
+
+	ret := C.GetShaderLocationAttrib(*cshader, cuniformName)
+	v := (int32)(ret)
+	return v
+}
+
+// SetShaderValue - Set shader uniform value (float)
+func SetShaderValue(shader Shader, locIndex int32, value []float32, uniformType ShaderUniformDataType) {
+	cshader := shader.cptr()
+	clocIndex := (C.int)(locIndex)
+	cvalue := (*C.float)(unsafe.Pointer(&value[0]))
+	cuniformType := (C.int)(uniformType)
+	C.SetShaderValue(*cshader, clocIndex, unsafe.Pointer(cvalue), cuniformType)
+}
+
+// SetShaderValueV - Set shader uniform value (float)
+func SetShaderValueV(shader Shader, locIndex int32, value []float32, uniformType ShaderUniformDataType, count int32) {
+	cshader := shader.cptr()
+	clocIndex := (C.int)(locIndex)
+	cvalue := (*C.float)(unsafe.Pointer(&value[0]))
+	cuniformType := (C.int)(uniformType)
+	ccount := (C.int)(count)
+	C.SetShaderValueV(*cshader, clocIndex, unsafe.Pointer(cvalue), cuniformType, ccount)
+}
+
+// SetShaderValueMatrix - Set shader uniform value (matrix 4x4)
+func SetShaderValueMatrix(shader Shader, locIndex int32, mat Matrix) {
+	cshader := shader.cptr()
+	clocIndex := (C.int)(locIndex)
+	cmat := mat.cptr()
+	C.SetShaderValueMatrix(*cshader, clocIndex, *cmat)
+}
+
+// SetShaderValueTexture - Set shader uniform value for texture (sampler2d)
+func SetShaderValueTexture(shader Shader, locIndex int32, texture Texture2D) {
+	cshader := shader.cptr()
+	clocIndex := (C.int)(locIndex)
+	ctexture := texture.cptr()
+	C.SetShaderValueTexture(*cshader, clocIndex, *ctexture)
+}
+
+// UnloadShader - Unload a custom shader from memory
+func UnloadShader(shader Shader) {
+	cshader := shader.cptr()
+	C.UnloadShader(*cshader)
+}
+
 // GetMouseRay - Returns a ray trace from mouse position
 func GetMouseRay(mousePosition Vector2, camera Camera) Ray {
 	cmousePosition := mousePosition.cptr()
@@ -498,6 +707,28 @@ func GetTime() float64 {
 	return v
 }
 
+// Custom frame control functions
+// NOTE: SwapScreenBuffer and PollInputEvents are intended for advanced users that want full control over the frame processing
+// By default EndDrawing() does this job: draws everything + SwapScreenBuffer() + manage frame timing + PollInputEvents()
+// To avoid that behaviour and control frame processes manually you can either enable in config.h: SUPPORT_CUSTOM_FRAME_CONTROL
+// or add CGO_CFLAGS="-DSUPPORT_CUSTOM_FRAME_CONTROL=1" to your build
+
+// SwapScreenBuffer - Swap back buffer to front buffer
+func SwapScreenBuffer() {
+	C.SwapScreenBuffer()
+}
+
+// Register all input events
+func PollInputEvents() {
+	C.PollInputEvents()
+}
+
+// WaitTime - Wait for some time (halt program execution)
+func WaitTime(seconds float64) {
+	cseconds := (C.double)(seconds)
+	C.WaitTime(cseconds)
+}
+
 // Fade - Returns color with alpha applied, alpha goes from 0.0f to 1.0f
 func Fade(col color.RGBA, alpha float32) color.RGBA {
 	ccolor := colorCptr(col)
@@ -549,6 +780,33 @@ func ColorFromHSV(hue, saturation, value float32) color.RGBA {
 	csaturation := (C.float)(saturation)
 	cvalue := (C.float)(value)
 	ret := C.ColorFromHSV(chue, csaturation, cvalue)
+	v := newColorFromPointer(unsafe.Pointer(&ret))
+	return v
+}
+
+// ColorTint - Get color multiplied with another color
+func ColorTint(col color.RGBA, tint color.RGBA) color.RGBA {
+	ccolor := colorCptr(col)
+	ctint := colorCptr(tint)
+	ret := C.ColorTint(*ccolor, *ctint)
+	v := newColorFromPointer(unsafe.Pointer(&ret))
+	return v
+}
+
+// ColorBrightness - Get color with brightness correction, brightness factor goes from -1.0f to 1.0f
+func ColorBrightness(col color.RGBA, factor float32) color.RGBA {
+	ccolor := colorCptr(col)
+	cfactor := C.float(factor)
+	ret := C.ColorBrightness(*ccolor, cfactor)
+	v := newColorFromPointer(unsafe.Pointer(&ret))
+	return v
+}
+
+// ColorContrast - Get color with contrast correction, contrast values between -1.0f and 1.0f
+func ColorContrast(col color.RGBA, contrast float32) color.RGBA {
+	ccolor := colorCptr(col)
+	ccontrast := C.float(contrast)
+	ret := C.ColorContrast(*ccolor, ccontrast)
 	v := newColorFromPointer(unsafe.Pointer(&ret))
 	return v
 }
@@ -649,10 +907,71 @@ func TakeScreenshot(name string) {
 	C.TakeScreenshot(cname)
 }
 
+// LoadAutomationEventList - Load automation events list from file, NULL for empty list, capacity = MAX_AUTOMATION_EVENTS
+func LoadAutomationEventList(fileName string) AutomationEventList {
+	cfileName := C.CString(fileName)
+	defer C.free(unsafe.Pointer(cfileName))
+
+	ret := C.LoadAutomationEventList(cfileName)
+	v := newAutomationEventListFromPointer(unsafe.Pointer(&ret))
+
+	return v
+}
+
+// UnloadAutomationEventList - Unload automation events list from file
+func UnloadAutomationEventList(list *AutomationEventList) {
+	C.UnloadAutomationEventList(*list.cptr())
+}
+
+// ExportAutomationEventList - Export automation events list as text file
+func ExportAutomationEventList(list AutomationEventList, fileName string) bool {
+	cfileName := C.CString(fileName)
+	defer C.free(unsafe.Pointer(cfileName))
+
+	ret := C.ExportAutomationEventList(*list.cptr(), cfileName)
+	v := bool(ret)
+
+	return v
+}
+
+// SetAutomationEventList - Set automation event list to record to
+func SetAutomationEventList(list *AutomationEventList) {
+	C.SetAutomationEventList(list.cptr())
+}
+
+// SetAutomationEventBaseFrame - Set automation event internal base frame to start recording
+func SetAutomationEventBaseFrame(frame int) {
+	cframe := (C.int)(frame)
+	C.SetAutomationEventBaseFrame(cframe)
+}
+
+// StartAutomationEventRecording - Start recording automation events (AutomationEventList must be set)
+func StartAutomationEventRecording() {
+	C.StartAutomationEventRecording()
+}
+
+// StopAutomationEventRecording - Stop recording automation events
+func StopAutomationEventRecording() {
+	C.StopAutomationEventRecording()
+}
+
+// PlayAutomationEvent - Play a recorded automation event
+func PlayAutomationEvent(event AutomationEvent) {
+	C.PlayAutomationEvent(*event.cptr())
+}
+
 // IsKeyPressed - Detect if a key has been pressed once
 func IsKeyPressed(key int32) bool {
 	ckey := (C.int)(key)
 	ret := C.IsKeyPressed(ckey)
+	v := bool(ret)
+	return v
+}
+
+// IsKeyPressedRepeat - Detect if a key has been pressed again (Only PLATFORM_DESKTOP)
+func IsKeyPressedRepeat(key int32) bool {
+	ckey := (C.int)(key)
+	ret := C.IsKeyPressedRepeat(ckey)
 	v := bool(ret)
 	return v
 }

@@ -1,5 +1,5 @@
-//go:build openbsd && !linux && !drm && !rpi && !android
-// +build openbsd,!linux,!drm,!rpi,!android
+//go:build openbsd && !linux && !rgfw && !drm && !sdl && !android
+// +build openbsd,!linux,!rgfw,!drm,!sdl,!android
 
 package rl
 
@@ -12,17 +12,10 @@ package rl
 #include "external/glfw/src/vulkan.c"
 #include "external/glfw/src/window.c"
 
-#ifdef _GLFW_WAYLAND
-#include "external/glfw/src/wl_init.c"
-#include "external/glfw/src/wl_monitor.c"
-#include "external/glfw/src/wl_window.c"
-#endif
-#ifdef _GLFW_X11
 #include "external/glfw/src/x11_init.c"
 #include "external/glfw/src/x11_monitor.c"
 #include "external/glfw/src/x11_window.c"
 #include "external/glfw/src/glx_context.c"
-#endif
 
 #include "external/glfw/src/null_joystick.c"
 #include "external/glfw/src/posix_module.c"
@@ -33,19 +26,20 @@ package rl
 #include "external/glfw/src/egl_context.c"
 #include "external/glfw/src/osmesa_context.c"
 
-#cgo openbsd CFLAGS: -I. -I/usr/X11R6/include -Iexternal/glfw/include -DPLATFORM_DESKTOP
-#cgo openbsd LDFLAGS: -L/usr/X11R6/lib
+GLFWbool _glfwConnectNull(int platformID, _GLFWplatform* platform) {
+	return GLFW_TRUE;
+}
 
-#cgo openbsd,!wayland LDFLAGS: -lGL -lm -pthread -lX11
-#cgo openbsd,wayland LDFLAGS: -lGL -lm -pthread -lwayland-client -lwayland-cursor -lwayland-egl -lxkbcommon
+#cgo openbsd CFLAGS: -I. -I/usr/X11R6/include -Iexternal/glfw/include -DPLATFORM_DESKTOP -D_GLFW_X11
+#cgo openbsd LDFLAGS: -L/usr/X11R6/lib -lm -pthread -lX11
 
-#cgo openbsd,!wayland CFLAGS: -D_GLFW_X11
-#cgo openbsd,wayland CFLAGS: -D_GLFW_WAYLAND
+#cgo openbsd,!es2,!es3 LDFLAGS: -lGL
 
-#cgo openbsd,opengl11,!angle CFLAGS: -DGRAPHICS_API_OPENGL_11
-#cgo openbsd,opengl21,!angle CFLAGS: -DGRAPHICS_API_OPENGL_21
-#cgo openbsd,opengl43,!angle CFLAGS: -DGRAPHICS_API_OPENGL_43
-#cgo openbsd,!opengl11,!opengl21,!opengl43,!angle CFLAGS: -DGRAPHICS_API_OPENGL_33
-#cgo openbsd,angle CFLAGS: -DGRAPHICS_API_OPENGL_ES2
+#cgo openbsd,opengl11,!es2,!es3 CFLAGS: -DGRAPHICS_API_OPENGL_11
+#cgo openbsd,opengl21,!es2,!es3 CFLAGS: -DGRAPHICS_API_OPENGL_21
+#cgo openbsd,opengl43,!es2,!es3 CFLAGS: -DGRAPHICS_API_OPENGL_43
+#cgo openbsd,!opengl11,!opengl21,!opengl43,!es2,!es3 CFLAGS: -DGRAPHICS_API_OPENGL_33
+#cgo openbsd,es2,!es3 CFLAGS: -DGRAPHICS_API_OPENGL_ES2
+#cgo openbsd,es3,!es2 CFLAGS: -DGRAPHICS_API_OPENGL_ES3
 */
 import "C"

@@ -9,10 +9,17 @@ package rl
 #include <android/asset_manager.h>
 #include <android_native_app_glue.h>
 
-extern void android_init();
+extern struct android_app* GetAndroidApp();
 
-AAssetManager* asset_manager;
-const char* internal_storage_path;
+static AAssetManager* GetAssetManager() {
+    struct android_app* app = GetAndroidApp();
+    return app->activity->assetManager;
+}
+
+static const char* GetInternalStoragePath() {
+    struct android_app* app = GetAndroidApp();
+    return app->activity->internalDataPath;
+}
 */
 import "C"
 
@@ -33,7 +40,6 @@ func InitWindow(width int32, height int32, title string) {
 	defer C.free(unsafe.Pointer(ctitle))
 
 	C.InitWindow(cwidth, cheight, ctitle)
-	C.android_init()
 }
 
 // SetCallbackFunc - Sets callback function
@@ -98,7 +104,7 @@ func OpenAsset(name string) (Asset, error) {
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
 
-	a := &asset{C.AAssetManager_open(C.asset_manager, cname, C.AASSET_MODE_UNKNOWN)}
+	a := &asset{C.AAssetManager_open(C.GetAssetManager(), cname, C.AASSET_MODE_UNKNOWN)}
 
 	if a.ptr == nil {
 		return nil, fmt.Errorf("asset file could not be opened")
@@ -116,6 +122,7 @@ func (a *asset) Read(p []byte) (n int, err error) {
 	if n == 0 && len(p) > 0 {
 		return 0, io.EOF
 	}
+
 	return n, nil
 }
 
@@ -124,14 +131,16 @@ func (a *asset) Seek(offset int64, whence int) (int64, error) {
 	if off == -1 {
 		return 0, fmt.Errorf("bad result for offset=%d, whence=%d", offset, whence)
 	}
+
 	return int64(off), nil
 }
 
 func (a *asset) Close() error {
 	C.AAsset_close(a.ptr)
+
 	return nil
 }
 
 func getInternalStoragePath() string {
-	return C.GoString(C.internal_storage_path)
+	return C.GoString(C.GetInternalStoragePath())
 }

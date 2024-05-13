@@ -10,9 +10,19 @@ import (
 	"unsafe"
 )
 
+// newGlyphInfoFromPointer - Returns new GlyphInfo from pointer
+func newGlyphInfoFromPointer(ptr unsafe.Pointer) GlyphInfo {
+	return *(*GlyphInfo)(ptr)
+}
+
 // cptr returns C pointer
 func (c *GlyphInfo) cptr() *C.GlyphInfo {
 	return (*C.GlyphInfo)(unsafe.Pointer(c))
+}
+
+// newFontFromPointer - Returns new Font from pointer
+func newFontFromPointer(ptr unsafe.Pointer) Font {
+	return *(*Font)(ptr)
 }
 
 // cptr returns C pointer
@@ -37,7 +47,7 @@ func LoadFont(fileName string) Font {
 }
 
 // LoadFontEx - Load Font from file with extended parameters
-func LoadFontEx(fileName string, fontSize int32, fontChars []rune) Font {
+func LoadFontEx(fileName string, fontSize int32, fontChars []rune, runesNumber ...int32) Font {
 	var cfontChars *C.int
 	var ccharsCount C.int
 
@@ -47,6 +57,11 @@ func LoadFontEx(fileName string, fontSize int32, fontChars []rune) Font {
 	if fontChars != nil {
 		cfontChars = (*C.int)(unsafe.Pointer(&fontChars[0]))
 		ccharsCount = (C.int)(len(fontChars))
+	}
+	if fontChars == nil {
+		if len(runesNumber) > 0 {
+			ccharsCount = (C.int)(runesNumber[0])
+		}
 	}
 	ret := C.LoadFontEx(cfileName, cfontSize, cfontChars, ccharsCount)
 	v := newFontFromPointer(unsafe.Pointer(&ret))
@@ -64,36 +79,57 @@ func LoadFontFromImage(image Image, key color.RGBA, firstChar int32) Font {
 }
 
 // LoadFontFromMemory - Load font from memory buffer, fileType refers to extension: i.e. ".ttf"
-func LoadFontFromMemory(fileType string, fileData []byte, dataSize int32, fontSize int32, fontChars *int32, charsCount int32) Font {
+func LoadFontFromMemory(fileType string, fileData []byte, fontSize int32, codepoints []rune) Font {
 	cfileType := C.CString(fileType)
 	defer C.free(unsafe.Pointer(cfileType))
 	cfileData := (*C.uchar)(unsafe.Pointer(&fileData[0]))
-	cdataSize := (C.int)(dataSize)
+	cdataSize := (C.int)(len(fileData))
 	cfontSize := (C.int)(fontSize)
-	cfontChars := (*C.int)(unsafe.Pointer(fontChars))
-	ccharsCount := (C.int)(charsCount)
+	cfontChars := (*C.int)(unsafe.SliceData(codepoints))
+	ccharsCount := (C.int)(len(codepoints))
 	ret := C.LoadFontFromMemory(cfileType, cfileData, cdataSize, cfontSize, cfontChars, ccharsCount)
 	v := newFontFromPointer(unsafe.Pointer(&ret))
 	return v
 }
 
+// IsFontReady - Check if a font is ready
+func IsFontReady(font Font) bool {
+	cfont := font.cptr()
+	ret := C.IsFontReady(*cfont)
+	v := bool(ret)
+	return v
+}
+
 // LoadFontData - Load font data for further use
-func LoadFontData(fileData []byte, dataSize int32, fontSize int32, fontChars *int32, charsCount, typ int32) *GlyphInfo {
+func LoadFontData(fileData []byte, fontSize int32, codePoints []int32, typ int32) []GlyphInfo {
 	cfileData := (*C.uchar)(unsafe.Pointer(&fileData[0]))
-	cdataSize := (C.int)(dataSize)
+	cdataSize := (C.int)(len(fileData))
 	cfontSize := (C.int)(fontSize)
-	cfontChars := (*C.int)(unsafe.Pointer(fontChars))
-	ccharsCount := (C.int)(charsCount)
+	ccodePoints := (*C.int)(unsafe.Pointer(&codePoints[0]))
+	ccodePointCount := (C.int)(len(codePoints))
 	ctype := (C.int)(typ)
-	ret := C.LoadFontData(cfileData, cdataSize, cfontSize, cfontChars, ccharsCount, ctype)
-	v := newGlyphInfoFromPointer(unsafe.Pointer(&ret))
-	return &v
+	ret := C.LoadFontData(cfileData, cdataSize, cfontSize, ccodePoints, ccodePointCount, ctype)
+	v := unsafe.Slice((*GlyphInfo)(unsafe.Pointer(ret)), ccodePointCount)
+	return v
+}
+
+// UnloadFontData - Unload font chars info data (RAM)
+func UnloadFontData(glyphs []GlyphInfo) {
+	cglyphs := (*C.GlyphInfo)(unsafe.Pointer(&glyphs[0]))
+	C.UnloadFontData(cglyphs, C.int(len(glyphs)))
 }
 
 // UnloadFont - Unload Font from GPU memory (VRAM)
 func UnloadFont(font Font) {
 	cfont := font.cptr()
 	C.UnloadFont(*cfont)
+}
+
+// DrawFPS - Shows current FPS
+func DrawFPS(posX int32, posY int32) {
+	cposX := (C.int)(posX)
+	cposY := (C.int)(posY)
+	C.DrawFPS(cposX, cposY)
 }
 
 // DrawText - Draw text (using default font)
@@ -117,6 +153,26 @@ func DrawTextEx(font Font, text string, position Vector2, fontSize float32, spac
 	cspacing := (C.float)(spacing)
 	ctint := colorCptr(tint)
 	C.DrawTextEx(*cfont, ctext, *cposition, cfontSize, cspacing, *ctint)
+}
+
+// DrawTextPro - Draw text using Font and pro parameters (rotation)
+func DrawTextPro(font Font, text string, position Vector2, origin Vector2, rotation, fontSize float32, spacing float32, tint color.RGBA) {
+	cfont := font.cptr()
+	ctext := C.CString(text)
+	defer C.free(unsafe.Pointer(ctext))
+	cposition := position.cptr()
+	crotation := (C.float)(rotation)
+	corigin := origin.cptr()
+	cfontSize := (C.float)(fontSize)
+	cspacing := (C.float)(spacing)
+	ctint := colorCptr(tint)
+	C.DrawTextPro(*cfont, ctext, *cposition, *corigin, crotation, cfontSize, cspacing, *ctint)
+}
+
+// SetTextLineSpacing - Set vertical line spacing when drawing with line-breaks
+func SetTextLineSpacing(spacing int) {
+	cspacing := (C.int)(spacing)
+	C.SetTextLineSpacing(cspacing)
 }
 
 // MeasureText - Measure string width for default font
@@ -166,11 +222,4 @@ func GetGlyphAtlasRec(font Font, codepoint int32) Rectangle {
 	ret := C.GetGlyphAtlasRec(*cfont, ccodepoint)
 	v := newRectangleFromPointer(unsafe.Pointer(&ret))
 	return v
-}
-
-// DrawFPS - Shows current FPS
-func DrawFPS(posX int32, posY int32) {
-	cposX := (C.int)(posX)
-	cposY := (C.int)(posY)
-	C.DrawFPS(cposX, cposY)
 }

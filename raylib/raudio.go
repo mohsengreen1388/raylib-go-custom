@@ -4,29 +4,71 @@
 package rl
 
 /*
-//#include "external/stb_vorbis.c"
-
 #include "raylib.h"
 #include <stdlib.h>
+
+extern void internalAudioStreamCallbackGo(void *, int);
+
+static void audioStreamWrapperCallback(void *data, unsigned int frames) {
+	internalAudioStreamCallbackGo(data, frames);
+}
+
+static void setAudioStreamCallbackWrapper(AudioStream stream) {
+	SetAudioStreamCallback(stream, audioStreamWrapperCallback);
+}
 */
 import "C"
 import (
-	"reflect"
 	"unsafe"
 )
+
+var internalAudioStreamCallback AudioCallback
+
+// SetAudioStreamCallback - Audio thread callback to request new data
+func SetAudioStreamCallback(stream AudioStream, callback AudioCallback) {
+	internalAudioStreamCallback = callback
+	C.setAudioStreamCallbackWrapper(*stream.cptr())
+}
+
+//export internalAudioStreamCallbackGo
+func internalAudioStreamCallbackGo(data unsafe.Pointer, frames C.int) {
+	if internalAudioStreamCallback != nil {
+		internalAudioStreamCallback(unsafe.Slice((*float32)(data), frames), int(frames))
+	}
+}
+
+// newWaveFromPointer - Returns new Wave from pointer
+func newWaveFromPointer(ptr unsafe.Pointer) Wave {
+	return *(*Wave)(ptr)
+}
 
 // cptr returns C pointer
 func (w *Wave) cptr() *C.Wave {
 	return (*C.Wave)(unsafe.Pointer(w))
 }
 
+// newSoundFromPointer - Returns new Sound from pointer
+func newSoundFromPointer(ptr unsafe.Pointer) Sound {
+	return *(*Sound)(ptr)
+}
+
 func (s *Sound) cptr() *C.Sound {
 	return (*C.Sound)(unsafe.Pointer(s))
+}
+
+// newAudioStreamFromPointer - Returns new AudioStream from pointer
+func newAudioStreamFromPointer(ptr unsafe.Pointer) AudioStream {
+	return *(*AudioStream)(ptr)
 }
 
 // cptr returns C pointer
 func (a *AudioStream) cptr() *C.AudioStream {
 	return (*C.AudioStream)(unsafe.Pointer(a))
+}
+
+// newMusicFromPointer - Returns new Music from pointer
+func newMusicFromPointer(ptr unsafe.Pointer) Music {
+	return *(*Music)(ptr)
 }
 
 // InitAudioDevice - Initialize audio device and context
@@ -52,6 +94,13 @@ func SetMasterVolume(volume float32) {
 	C.SetMasterVolume(cvolume)
 }
 
+// GetMasterVolume - Set master volume (listener)
+func GetMasterVolume() float32 {
+	ret := C.GetMasterVolume()
+	v := float32(ret)
+	return v
+}
+
 // LoadWave - Load wave data from file into RAM
 func LoadWave(fileName string) Wave {
 	cfileName := C.CString(fileName)
@@ -72,6 +121,14 @@ func LoadWaveFromMemory(fileType string, fileData []byte, dataSize int32) Wave {
 	return v
 }
 
+// IsWaveReady - Checks if wave data is ready
+func IsWaveReady(wave Wave) bool {
+	cwave := wave.cptr()
+	ret := C.IsWaveReady(*cwave)
+	v := bool(ret)
+	return v
+}
+
 // LoadSound - Load sound to memory
 func LoadSound(fileName string) Sound {
 	cfileName := C.CString(fileName)
@@ -86,6 +143,22 @@ func LoadSoundFromWave(wave Wave) Sound {
 	cwave := wave.cptr()
 	ret := C.LoadSoundFromWave(*cwave)
 	v := newSoundFromPointer(unsafe.Pointer(&ret))
+	return v
+}
+
+// LoadSoundAlias - Create a new sound that shares the same sample data as the source sound, does not own the sound data
+func LoadSoundAlias(source Sound) Sound {
+	csound := source.cptr()
+	ret := C.LoadSoundAlias(*csound)
+	v := newSoundFromPointer(unsafe.Pointer(&ret))
+	return v
+}
+
+// IsSoundReady - Checks if a sound is ready
+func IsSoundReady(sound Sound) bool {
+	csound := sound.cptr()
+	ret := C.IsSoundReady(*csound)
+	v := bool(ret)
 	return v
 }
 
@@ -197,16 +270,10 @@ func WaveCrop(wave Wave, initSample int32, finalSample int32) {
 
 // LoadWaveSamples - Get samples data from wave as a floats array
 func LoadWaveSamples(wave Wave) []float32 {
-	var data []float32
 	cwave := wave.cptr()
 	ret := C.LoadWaveSamples(*cwave)
-
-	sliceHeader := (*reflect.SliceHeader)((unsafe.Pointer(&data)))
-	sliceHeader.Cap = int(wave.FrameCount)
-	sliceHeader.Len = int(wave.FrameCount)
-	sliceHeader.Data = uintptr(unsafe.Pointer(ret))
-
-	return data
+	v := unsafe.Slice((*float32)(unsafe.Pointer(ret)), wave.FrameCount)
+	return v
 }
 
 // UnloadWaveSamples - Unload samples data loaded with LoadWaveSamples()
@@ -231,6 +298,14 @@ func LoadMusicStreamFromMemory(fileType string, fileData []byte, dataSize int32)
 	cdataSize := (C.int)(dataSize)
 	ret := C.LoadMusicStreamFromMemory(cfileType, cfileData, cdataSize)
 	v := newMusicFromPointer(unsafe.Pointer(&ret))
+	return v
+}
+
+// IsMusicReady - Checks if a music stream is ready
+func IsMusicReady(music Music) bool {
+	cmusic := *(*C.Music)(unsafe.Pointer(&music))
+	ret := C.IsMusicReady(cmusic)
+	v := bool(ret)
 	return v
 }
 
@@ -329,6 +404,14 @@ func LoadAudioStream(sampleRate uint32, sampleSize uint32, channels uint32) Audi
 	cchannels := (C.uint)(channels)
 	ret := C.LoadAudioStream(csampleRate, csampleSize, cchannels)
 	v := newAudioStreamFromPointer(unsafe.Pointer(&ret))
+	return v
+}
+
+// IsAudioStreamReady - Checks if an audio stream is ready
+func IsAudioStreamReady(stream AudioStream) bool {
+	cstream := stream.cptr()
+	ret := C.IsAudioStreamReady(*cstream)
+	v := bool(ret)
 	return v
 }
 
