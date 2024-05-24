@@ -6645,6 +6645,12 @@ int GetParentBone(Model model, int boneId)
     return model.bones[boneId].parent;
 }
 
+// Get ParentBone Animtion
+int GetParentBoneAnimtion(ModelAnimation *modelAnimation,int boneId)
+{
+    return modelAnimation->bones[boneId].parent;
+}
+
 // Get BoneCount
 int BoneCount(Model model)
 {

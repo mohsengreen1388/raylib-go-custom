@@ -1761,6 +1761,7 @@ extern "C"
     RLAPI Transform GetBindPose(Model model, int boneId);                         // Get bindPose
     RLAPI char *GetBoneName(Model model, int boneId);                             // Get NameBone
     RLAPI int GetParentBone(Model model, int boneId);                             // Get ParentBone
+    RLAPI int GetParentBoneAnimtion(ModelAnimation *modelAnimation, int boneId);  // Get ParentBoneAnimtion
     RLAPI int BoneCount(Model model);                                             // BoneCount
 
 #if defined(__cplusplus)

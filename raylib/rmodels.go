@@ -780,44 +780,52 @@ func GetRayCollisionQuad(ray Ray, p1, p2, p3, p4 Vector3) RayCollision {
 	return v
 }
 
-//Custom func 
+//Custom func
 
 // Get framePoses for per bone
-func GetBonePose(anim ModelAnimation, frame int32,boneId int32)Transform{
+func GetBonePose(anim ModelAnimation, frame int32, boneId int32) Transform {
 	canim := anim.cptr()
 	cframe := (C.int)(frame)
 	cboneId := (C.int)(boneId)
-	result := C.GetBonePose(*canim,cframe,cboneId)
+	result := C.GetBonePose(*canim, cframe, cboneId)
 	return *(*Transform)(unsafe.Pointer(&result))
 }
 
 // Get bindPose Model
-func GetBindPose(model Model,boneId int32)Transform{
+func GetBindPose(model Model, boneId int32) Transform {
 	cmodel := model.cptr()
 	cboneId := (C.int)(boneId)
-	result := C.GetBindPose(*cmodel,cboneId)
+	result := C.GetBindPose(*cmodel, cboneId)
 	return *(*Transform)(unsafe.Pointer(&result))
 }
 
 // Get framePoses for per bone
-func BoneCount(model Model)int32{
+func BoneCount(model Model) int32 {
 	cmodel := model.cptr()
 	result := C.BoneCount(*cmodel)
 	return *(*int32)(unsafe.Pointer(&result))
 }
 
-//Get NameBone
-func GetBoneName(model Model,boneId int)string{
+// Get NameBone
+func GetBoneName(model Model, boneId int) string {
 	cmodel := model.cptr()
 	cboneId := (C.int)(boneId)
-	Name := C.GoString(C.GetBoneName(*cmodel,cboneId))
-    return Name
+	Name := C.GoString(C.GetBoneName(*cmodel, cboneId))
+	return Name
 }
 
 // Get ParentBone
-func GetParentBone(model Model,boneId int)int32{
+func GetParentBone(model Model, boneId int) int32 {
 	cmodel := model.cptr()
 	cboneId := (C.int)(boneId)
-	result := C.GetParentBone(*cmodel,cboneId)
+	result := C.GetParentBone(*cmodel, cboneId)
+	return *(*int32)(unsafe.Pointer(&result))
+}
+
+// Get ParentBone Animtion
+func GetParentBoneAnimtion(modelAnimation *ModelAnimation,boneId int) int32 {
+	cmodelAnimation := modelAnimation.cptr()
+	cboneId := (C.int)(boneId)
+	result := C.GetParentBoneAnimtion(cmodelAnimation,cboneId)
 	return *(*int32)(unsafe.Pointer(&result))
 }

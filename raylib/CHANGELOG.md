@@ -7,6 +7,8 @@ Transform GetBindPose(Model model,int boneId)
 char* GetBoneName(Model model,int boneId)
 // Get ParentBone
 int GetParentBone(Model model,int boneId)
+// Get ParentBoneAnimtion
+int GetParentBoneAnimtion(ModelAnimation *modelAnimation,int boneId)
 // Get BoneCount
 int BoneCount(Model model)
 
@@ -15,6 +17,7 @@ RLAPI Transform GetBonePose(ModelAnimation anim,int frameCount,int boneId);     
 RLAPI Transform GetBindPose(Model model,int boneId);                                    // Get bindPose
 RLAPI char* GetBoneName(Model model,int boneId);                                        // Get NameBone
 RLAPI int GetParentBone(Model model,int boneId);                                       // Get ParentBone
+RLAPI int GetParentBoneAnimtion(ModelAnimation *modelAnimation, int boneId);  // Get ParentBoneAnimtion
 RLAPI int BoneCount(Model model);                                                      //BoneCount
 
 #rmodels.go
@@ -28,3 +31,5 @@ func BoneCount(model Model)int32
 func GetBoneName(model Model,boneId int)string
 // Get ParentBone
 func GetParentBone(model Model,boneId int)int32
+// Get ParentBone Animtion
+func GetParentBoneAnimtion(modelAnimation *ModelAnimation,boneId int) int32
